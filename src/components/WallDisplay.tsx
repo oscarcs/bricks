@@ -9,6 +9,7 @@ const WallDisplay: React.FC = () => {
     const [sortedBrickOrder, setSortedBrickOrder] = useState<Brick[]>([]);
     const [bricksToDisplay, setBricksToDisplay] = useState<Brick[]>([]);
     const [builtBricksCount, setBuiltBricksCount] = useState(0);
+    const [scale, setScale] = useState(1);
 
     useEffect(() => {
         const order = calculateNaiveBuildOrder(initialWallBricks, ROBOT_CONFIG);
@@ -25,6 +26,22 @@ const WallDisplay: React.FC = () => {
         });
         setBricksToDisplay(initialDisplayState);
     }, [initialWallBricks]);
+
+    useEffect(() => {
+        const calculateScale = () => {
+            const viewportWidth = window.innerWidth * 0.8;
+            const viewportHeight = window.innerHeight * 0.8;
+
+            const widthScale = viewportWidth / WALL_CONFIG.width;
+            const heightScale = viewportHeight / WALL_CONFIG.height;
+            
+            setScale(Math.min(widthScale, heightScale));
+        };
+
+        calculateScale(); 
+        window.addEventListener('resize', calculateScale);
+        return () => window.removeEventListener('resize', calculateScale);
+    }, []);
 
     const buildNextBrick = useCallback(() => {
         if (builtBricksCount < sortedBrickOrder.length) {
@@ -54,14 +71,14 @@ const WallDisplay: React.FC = () => {
 
     const wallStyle: React.CSSProperties = {
         position: 'relative',
-        width: WALL_CONFIG.width,
-        height: WALL_CONFIG.height,
+        width: WALL_CONFIG.width * scale,
+        height: WALL_CONFIG.height * scale,
         border: '1px solid black',
         margin: '20px auto',
     };
 
     const wallContainerStyle: React.CSSProperties = {
-        width: WALL_CONFIG.width + 40, // Add some padding
+        width: WALL_CONFIG.width * scale + 40, // Add some padding
         margin: '0 auto',
     };
 
@@ -79,7 +96,7 @@ const WallDisplay: React.FC = () => {
             <p>Built bricks: {builtBricksCount} / {sortedBrickOrder.length}</p>
             <div style={wallStyle}>
                 {displayBricks.map(brick => (
-                    <BrickComponent key={brick.id} brick={brick} />
+                    <BrickComponent key={brick.id} brick={brick} scale={scale} />
                 ))}
             </div>
         </div>
