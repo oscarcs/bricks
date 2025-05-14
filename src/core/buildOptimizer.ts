@@ -11,8 +11,51 @@ function deepCopy<T>(obj: T): T {
  * @param robotConfig Robot configuration
  * @returns List of bricks in the order they should be built
  */
-export function calculateNaiveBuildOrder(initialBricks: Brick[], _: RobotConfig): Brick[] {
-    return deepCopy(initialBricks);
+export function calculateNaiveBuildOrder(initialBricks: Brick[], robotConfig: RobotConfig): Brick[] {
+    const allBricks = deepCopy(initialBricks);
+    const { envelopeWidth } = robotConfig;
+    const { width: wallWidth } = WALL_CONFIG;
+    const buildOrder: Brick[] = [];
+    let strideCounter = 0;
+
+    // Build course by course, sliding window across width
+    const courses = Array.from(new Set(allBricks.map(b => b.course))).sort((a, b) => a - b);
+    for (const course of courses) {
+
+        let unassigned = allBricks.filter(b => b.course === course);
+        let robotX = 0;
+        
+        while (unassigned.length > 0) {
+            // Bricks within the current window
+            const windowBricks = unassigned.filter(b =>
+                b.x + b.width > robotX && b.x < robotX + envelopeWidth
+            );
+            
+            if (windowBricks.length === 0) {
+                // Move to next unassigned brick
+                const next = unassigned.sort((a, b) => a.x - b.x)[0];
+                robotX = Math.max(0, Math.min(next.x, wallWidth - envelopeWidth));
+                continue;
+            }
+            
+            windowBricks.sort((a, b) => a.x - b.x);
+            for (const brick of windowBricks) {
+                brick.stride = strideCounter;
+                buildOrder.push(brick);
+            }
+            
+            // Remove assigned
+            unassigned = unassigned.filter(b => b.stride === -1);
+            
+            // Reposition for next window
+            const next = unassigned.sort((a, b) => a.x - b.x)[0];
+            if (next) {
+                robotX = Math.max(0, Math.min(next.x, wallWidth - envelopeWidth));
+                strideCounter++;
+            }
+        }
+    }
+    return buildOrder;
 }
 
 /**
@@ -24,6 +67,9 @@ export function calculateNaiveBuildOrder(initialBricks: Brick[], _: RobotConfig)
  */
 export function calculateOptimizedBuildOrder(initialBricks: Brick[], robotConfig: RobotConfig): Brick[] {
     const allBricks = deepCopy(initialBricks);
+    // Initialize stride property
+    allBricks.forEach(b => b.stride = 0);
+    let strideCounter = 0;
     const builtBrickIds = new Set<string>();
     const buildOrder: Brick[] = [];
 
@@ -55,6 +101,7 @@ export function calculateOptimizedBuildOrder(initialBricks: Brick[], robotConfig
 
             for (const brick of bricksInPotentialEnvelope) {
                 if (!builtBrickIds.has(brick.id) && isBrickBuildable(brick, builtBrickIds, allBricks)) {
+                    brick.stride = strideCounter;
                     buildOrder.push(brick);
                     builtBrickIds.add(brick.id);
                     bricksBuiltInThisStrideIteration++;
@@ -77,6 +124,7 @@ export function calculateOptimizedBuildOrder(initialBricks: Brick[], robotConfig
                 if (emergencyTarget) {
                     robotCurrentX = Math.max(0, Math.min(emergencyTarget.x, wallWidth - envelopeWidth));
                     robotCurrentY = Math.max(0, Math.min(emergencyTarget.y, wallHeight - envelopeHeight));
+                    strideCounter++;
                 }
                 else {
                     // No bricks left
@@ -133,6 +181,7 @@ export function calculateOptimizedBuildOrder(initialBricks: Brick[], robotConfig
             if (bestNextRobotX !== -1 && maxBricksInNextPotentialStride > 0) {
                 robotCurrentX = bestNextRobotX;
                 robotCurrentY = bestNextRobotY;
+                strideCounter++;
             }
             else {
                 // If no strategic move found, just move to the first candidate brick
@@ -140,6 +189,7 @@ export function calculateOptimizedBuildOrder(initialBricks: Brick[], robotConfig
                 if (fallbackTarget) {
                     robotCurrentX = Math.max(0, Math.min(fallbackTarget.x + fallbackTarget.width / 2 - envelopeWidth / 2, wallWidth - envelopeWidth));
                     robotCurrentY = Math.max(0, Math.min(fallbackTarget.y, wallHeight - envelopeHeight));
+                    strideCounter++;
                 }
                 else {
                     // No bricks left

@@ -96,7 +96,7 @@ const WallDisplay: React.FC = () => {
 
     return (
         <div style={wallContainerStyle}>
-            <h2>Masonry Wall Build Plan</h2>
+            <h3>Masonry Wall Build Plan</h3>
             <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
                 <button onClick={() => setBuildMode('naive')} disabled={buildMode === 'naive'}>
                     Naive Order
@@ -105,7 +105,7 @@ const WallDisplay: React.FC = () => {
                     Optimized Order
                 </button>
             </div>
-            <p>Press ENTER to build the next brick in the {buildMode} order.</p>
+            <p>Press ENTER to build the next brick in the {buildMode} order.<br />Hover for brick info.</p>
             <p>Built bricks: {builtBricksCount} / {sortedBrickOrder.length}</p>
             <div style={wallStyle}>
                 {displayBricks.map(brick => (

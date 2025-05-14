@@ -8,6 +8,7 @@ export interface Brick {
     status: 'planned' | 'built';
     course: number;
     indexInCourse: number; // Index of the brick within its course
+    stride: number;
 }
 
 export interface WallConfig {

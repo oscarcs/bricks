@@ -32,6 +32,7 @@ export function generateWall(): Brick[] {
                 status: 'planned',
                 course: i,
                 indexInCourse: brickIndexInCourse++,
+                stride: -1,
             };
             bricks.push(halfBrick);
             currentX += halfBrickLength + headJoint;
@@ -82,6 +83,7 @@ export function generateWall(): Brick[] {
                 status: 'planned',
                 course: i,
                 indexInCourse: brickIndexInCourse++,
+                stride: -1,
             };
             bricks.push(brick);
 
@@ -116,6 +118,7 @@ export function generateWall(): Brick[] {
                         status: 'planned',
                         course: i,
                         indexInCourse: brickIndexInCourse++,
+                        stride: -1,
                     };
                     bricks.push(fullBrick);
 
