@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { type Brick, WALL_CONFIG, ROBOT_CONFIG } from '../core/types';
+import { type Brick, WALL_CONFIG, ROBOT_CONFIG, type BuildOrder, type BuildOrderStrategy } from '../core/types';
 import { generateWall } from '../core/wallGenerator';
-import { calculateNaiveBuildOrder } from '../core/buildOptimizer';
+import { calculateNaiveBuildOrder, calculateOptimizedBuildOrder } from '../core/buildOptimizer';
 import BrickComponent from './BrickComponent';
+
+const buildOrderStrategies = {
+    naive: calculateNaiveBuildOrder,
+    optimized: calculateOptimizedBuildOrder,
+} as const satisfies Record<BuildOrder, BuildOrderStrategy>;
 
 const WallDisplay: React.FC = () => {
     const [initialWallBricks] = useState<Brick[]>(generateWall());
@@ -10,22 +15,22 @@ const WallDisplay: React.FC = () => {
     const [bricksToDisplay, setBricksToDisplay] = useState<Brick[]>([]);
     const [builtBricksCount, setBuiltBricksCount] = useState(0);
     const [scale, setScale] = useState(1);
+    const [buildMode, setBuildMode] = useState<'naive' | 'optimized'>('optimized');
 
     useEffect(() => {
-        const order = calculateNaiveBuildOrder(initialWallBricks, ROBOT_CONFIG);
+        const strategy = buildOrderStrategies[buildMode];
+        const order = strategy(initialWallBricks, ROBOT_CONFIG);
         setSortedBrickOrder(order);
         
-        // Initialize display bricks with all as 'planned' but ordered by optimizer
-        // We need to map the status from the initialWallBricks to the optimizedOrder
         const initialDisplayState = order.map(optimizedBrick => {
-            const originalBrick = initialWallBricks.find(b => b.id === optimizedBrick.id);
             return {
-                ...optimizedBrick, // Takes x, y, width, height, type, course, indexInCourse from optimizer (should be same)
-                status: originalBrick?.status || 'planned' // Ensures initial status is planned
+                ...optimizedBrick,
+                status: 'planned' as const
             };
         });
         setBricksToDisplay(initialDisplayState);
-    }, [initialWallBricks]);
+        setBuiltBricksCount(0);
+    }, [initialWallBricks, buildMode]);
 
     useEffect(() => {
         const calculateScale = () => {
@@ -92,7 +97,15 @@ const WallDisplay: React.FC = () => {
     return (
         <div style={wallContainerStyle}>
             <h2>Masonry Wall Build Plan</h2>
-            <p>Press ENTER to build the next brick in the optimized order.</p>
+            <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                <button onClick={() => setBuildMode('naive')} disabled={buildMode === 'naive'}>
+                    Naive Order
+                </button>
+                <button onClick={() => setBuildMode('optimized')} disabled={buildMode === 'optimized'}>
+                    Optimized Order
+                </button>
+            </div>
+            <p>Press ENTER to build the next brick in the {buildMode} order.</p>
             <p>Built bricks: {builtBricksCount} / {sortedBrickOrder.length}</p>
             <div style={wallStyle}>
                 {displayBricks.map(brick => (

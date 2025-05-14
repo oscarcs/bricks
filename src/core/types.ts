@@ -26,6 +26,9 @@ export interface RobotConfig {
     envelopeHeight: number;
 }
 
+export type BuildOrder = 'naive' | 'optimized';
+export type BuildOrderStrategy = (initialBricks: Brick[], robotConfig: RobotConfig) => Brick[];
+
 // Wall configuration, metrics in mm
 export const WALL_CONFIG: WallConfig = {
     width: 2300,
